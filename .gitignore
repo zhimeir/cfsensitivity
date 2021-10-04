@@ -1,3 +1,6 @@
+# Local compile files
+/local/
+
 # History files
 .Rhistory
 .Rapp.history

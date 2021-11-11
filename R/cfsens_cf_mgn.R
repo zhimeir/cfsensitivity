@@ -5,17 +5,18 @@
 
 cfsens_cf_mgn <- function(X, Y, T, 
                           Gamma, alpha,
-                          score_type = c("cqr", "cmr", "cdr"),
+                          side = c("two", "above", "below"),
+                          score_type = c("cqr"),
                           ps_fun = regression_forest, 
-                          ps_fun_args = NULL,
                           ps = NULL,
                           pred_fun = quantile_forest,
-                          pred_fun_args = NULL,
                           train_pop = 0.75, train_id = NULL){
   
   ## Process the input
   score_type <- score_type[1]
-  stopifnot(score_type %in% c("cqr", "cmr", "cdr"))
+  stopifnot(score_type %in% c("cqr"))
+  side <- side[1]
+  stopifnot(side %in% c("two", "above", "below"))
 
   ## Split the data into a training fold and a calibration fold
   n <- dim(X)[1]
@@ -28,10 +29,12 @@ cfsens_cf_mgn <- function(X, Y, T,
   X_train <- X[train_id,]
   T_train <- T[train_id]
   Y_train <- Y[train_id]
+  inds1_train <- which(T_train == 1)
 
   X_calib <- X[calib_id,]
   T_calib <- T[calib_id]
   Y_calib <- Y[calib_id]
+  inds1_calib <- which(T_calib == 1)
 
   ## Train the model of propensity scores on the training fold
   ps_mdl <- NULL
@@ -40,27 +43,54 @@ cfsens_cf_mgn <- function(X, Y, T,
     ps <- predict(ps_mdl, X_calib)
   }
 
-  ## Compute P(T=1) and P(T=0) 
+  ps0 <- ps[-inds1_calib,1]
+  ps1 <- ps[inds1_calib,1]
+
+  ## Estimate P(T=1) and P(T=0) 
   p1 <- mean(T_train == 1)
   p0 <- mean(T_train == 0)
 
   ## Train the prediction function on the training fold
-  pred_mdl <- pred_fun(X_train, Y_train, num.threads = 1)
+  pred_mdl0 <- pred_fun(X_train[-inds1_train,], Y_train[-inds1_train], num.threads = 1)
+  pred_mdl1 <- pred_fun(X_train[inds1_train,], Y_train[inds1_train], num.threads = 1)
 
   ## Compute the nonconformity scores on the calibration fold
   if(score_type == "cqr"){
-    q_lo <- predict(pred_mdl, X_calib, alpha)
-    q_hi <- predict(pred_mdl, X_calib, 1 - alpha)
-    score <- pmax(q_lo - Y_calib, Y_calib - q_hi)
+    q_lo0 <- predict(pred_mdl0, X_calib[-inds1_calib,], alpha)
+    q_hi0 <- predict(pred_mdl0, X_calib[-inds1_calib,], 1 - alpha)
+    q_lo1 <- predict(pred_mdl1, X_calib[inds1_calib,], alpha)
+    q_hi1 <- predict(pred_mdl1, X_calib[inds1_calib,], 1 - alpha)
+
+    ## If the predictive interval is two-sided: [a,b]
+    if(side == "two"){      
+      score0 <- pmax(q_lo0 - Y_calib[-inds1_calib], Y_calib[-inds1_calib] - q_hi0)
+      score1 <- pmax(q_lo1 - Y_calib[inds1_calib], Y_calib[inds1_calib] - q_hi1)
+    }
+
+    ## If the predictive interval is one-sided: [a,Inf)
+    if(side == "above"){
+      score0 <- q_lo0 - Y_calib[-inds1_calib]
+      score1 <- q_lo1 - Y_calib[inds1_calib]
+    }
+
+    ## If the predictive interval is one-sided: (-Inf,a]
+    if(side == "below"){
+      score0 <- Y_calib[-inds1_calib] - q_hi0
+      score1 <- Y_calib[inds1_calib] - q_hi1
+    }
+
   }
   
   ## Attach the results to the return object
   obj <- list(ps_mdl = ps_mdl, 
-              pred_mdl = pred_mdl, 
-              ps = ps, score = score, 
+              pred_mdl0 = pred_mdl0, 
+              pred_mdl1 = pred_mdl1, 
+              score0 = score0, score1 = score1, 
+              ps0 = ps0, ps1 = ps1, 
               Gamma = Gamma,
               p0 = p0, p1 = p1,
-              score_type = score_type)
+              score_type = score_type, 
+              alpha = alpha, side = side)
 
   class(obj) <- "cfmgn"
   return(obj)
@@ -71,7 +101,7 @@ cfsens_cf_mgn <- function(X, Y, T,
 #'
 #' @export
 
-predict.cfmgn <- function(obj, X_test, alpha = 0.1, 
+predict.cfmgn <- function(obj, X_test,  
                           estimand = c("treated", "control"),
                           type = c("ate", "att", "atc")){
 
@@ -80,14 +110,29 @@ predict.cfmgn <- function(obj, X_test, alpha = 0.1,
   estimand <- estimand[1]
 
   ps_mdl <- obj$ps_mdl
-  pred_mdl <- obj$pred_mdl
-  ps <- obj$ps
-  score <- obj$score
+  pred_mdl0 <- obj$pred_mdl0
+  pred_mdl1 <- obj$pred_mdl1
+  ps0 <- obj$ps0
+  ps1 <- obj$ps1
+  score0 <- obj$score0
+  score1 <- obj$score1
   Gamma <- obj$Gamma
   p0 <- obj$p0
   p1 <- obj$p1
   score_type <- obj$score_type
+  alpha <- obj$alpha
+  side <- obj$side
 
+  ## Determine the score to use
+  if(estimand == "treated"){
+    pred_mdl <- pred_mdl1
+    score <- score1
+    ps <- ps1
+  }else{
+    pred_mdl <- pred_mdl0
+    score <- score0
+    ps <- ps0
+  }
 
   ## Determine the dimension of X_test
   if(is.null(nrow(X_test))){
@@ -96,6 +141,7 @@ predict.cfmgn <- function(obj, X_test, alpha = 0.1,
   }else{
     n_test <- nrow(X_test)
   }
+
   ## Compute the likelihood ratio bounds for the calibration fold
   bnds <- sapply(ps, lr_bnds, estimand = estimand, type = type, 
                Gamma = Gamma, p0 = p0, p1 = p1)
@@ -125,8 +171,20 @@ predict.cfmgn <- function(obj, X_test, alpha = 0.1,
     Y_pred_lo <- predict(pred_mdl, X_test, alpha)
     Y_pred_hi <- predict(pred_mdl, X_test, 1-alpha)
 
-    Y_lo <- Y_pred_lo - score_cutoff
-    Y_hi <- Y_pred_hi + score_cutoff
+    if(side == "two"){
+      Y_lo <- Y_pred_lo - score_cutoff
+      Y_hi <- Y_pred_hi + score_cutoff
+    }
+
+    if(side == "above"){
+      Y_lo <- Y_pred_lo - score_cutoff
+      Y_hi <- NULL
+    }
+
+    if(side == "below"){
+      Y_lo <- NULL
+      Y_hi <- Y_pred_hi + score_cutoff
+    }
 
   }
 

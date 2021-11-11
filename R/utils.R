@@ -41,7 +41,7 @@ lr_bnds <- function(estimand = c("treated", "control"),
   }
 
   ## Y(0) | T = 0
-  if(estimand == "control" & type == "att"){
+  if(estimand == "control" & type == "atc"){
     lx <- 1
     ux <- 1
   }

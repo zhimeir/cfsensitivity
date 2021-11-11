@@ -32,7 +32,48 @@
 #' \code{\link{cfsens_cf_pac}}
 #'
 #' @examples
+#' \donttest{
+#' ## Data generating model
+#' data_model <- function(n, p, Gamma, seed){
+#'  set.seed(seed)
+#'  beta <- matrix(c(-0.531,0.126,-0.312,0.018,rep(0,p-4)), nrow=p)
+#'  X <- matrix(runif(n * p), n, p)
+#'  U <- rnorm(n) * abs(1 + 0.5 * sin(2.5 * X[,1]))
+#'  Y1 <-  X %*% beta + U
+#'  Y0 <- X %*% beta - U
+#'  prop.x <- exp(X %*% beta) / (1 + exp(X %*% beta))
+#'  p.x <- 1-(1/(prop.x + (1-prop.x)/Gamma ) -1)/( 1/(prop.x + (1-prop.x)/Gamma) - 1/(prop.x + Gamma*(1-prop.x)))
+#'  t.x <- qnorm(1-p.x/2) * abs(1+0.5*sin(2.5*X[,1]))
+#'  prop.xu <- (prop.x/(prop.x+Gamma*(1-prop.x)))*(abs(U)<=t.x) + (prop.x/(prop.x+ (1-prop.x)/Gamma))*(abs(U)>t.x)
+#'  TT <- rbinom(n, size=1, prob=prop.xu)
+#'  Y <- TT * Y1 + (1 - TT) * Y0
+#'  
+#'  return(list(Y1 = Y1, Y0 = Y0, Y = Y, X = X, T = TT))
+#'}
 #'
+#' ## Generate confounded training data
+#' n <- 5000
+#' n_test <- 5000
+#' p <- 10
+#' Gamma <- 1.5
+#' data <- data_model(n, p, Gamma, 2021)
+#'
+#' ## Generate confounded test data
+#' test <- data_model(n_test, p, Gamma, 2022)
+#'
+#' ## Construct predictive intervals with marginal guarantees
+#' ## grf package needs to be installed
+#' alpha <- 0.2
+#' res <- cfsens_cf_mgn(data$X, data$Y, data$T, 
+#'                     Gamma = Gamma, alpha = alpha,
+#'                     ps_fun = regression_forest, 
+#'                     pred_fun = quantile_forest)
+#'
+#' out_res <- predict(res, test$X, estimand = "treated", type = "ate")
+#' cover <- mean((test$Y1 >= out_res$Y_lo) * (test$Y1 <= out_res$Y_hi))
+#'cover
+#'
+#' }
 #'
 #'
 #' @export

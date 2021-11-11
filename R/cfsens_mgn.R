@@ -1,14 +1,32 @@
 #' Sensitivity analysis of individual treatment effect with marginal guarantee
 #'
-#' \code{cfsens_mgn} conducts sensitivity analysis of individual treatment with marginal guarantee.
+#' \code{cfsens_mgn} conducts sensitivity analysis of individual treatment effects
+#' with the marginal guarantee.
 #' It currently supports testing the sharp null and the directional nulls.
+#'
+#' @details When \code{null_type = "sharp"}, the null hypothesis is H_0: Y(1) - Y(0) = 0.
+#' When \code{null_type = "negative"}, the null hypothesis is H_0: Y(1) - Y(0) <= 0.
+#' When \code{null_type = "positive"}, the null hypothesis is H_0: Y(1) - Y(0) >= 0.
+#'
 #'
 #' @param X covariates.
 #' @param Y the observed outcome vector.
 #' @param T the vector of treatment assignments.
 #' @param alpha the target confidence level.
-#' @param null_type the null to be tested. Takes 
+#' @param null_type the null to be tested that takes value in \{"sharp", "negative", "positive"\}. See Details. 
+#' @param score_type the type of nonconformity scores. The default is "cqr".
+#' @param ps_fun a function that models the treatment assignment mechanism. The default is "regression_forest".
+#' @param ps a vector of propensity score. The default is \code{NULL}. 
+#' @param pred_fun a function that models the potential outcome conditional on the covariates. The default is "quantile_forest".
+#' @param train_prop proportion of units used for training. The default is 75\%. 
+#' @param train_id The index of the units used for training. The default is \code{NULL}.
 #'
+#' @return an \code{itemgn} object.
+#'
+#' @seealso 
+#' \code{\link{cfsens_pac}}
+#'
+#' @examples
 #'
 #' @export
 
@@ -19,7 +37,7 @@ cfsens_mgn <- function(X, Y, T,
                        ps_fun = regression_forest, 
                        ps = NULL,
                        pred_fun = quantile_forest,
-                       train_pop = 0.75, train_id = NULL){
+                       train_prop = 0.75, train_id = NULL){
   
   ## Process the input
   score_type <- score_type[1]
@@ -30,7 +48,7 @@ cfsens_mgn <- function(X, Y, T,
   ## Split the data into a training fold and a calibration fold
   n <- dim(X)[1]
   if(is.null(train_id)){
-    ntrain <- floor(n * train_pop)
+    ntrain <- floor(n * train_prop)
     train_id <- sample(1:n, ntrain, replace = FALSE)
   }
   calib_id <- (1:n)[-train_id]
@@ -107,7 +125,29 @@ cfsens_mgn <- function(X, Y, T,
 }
 
 
-#' Sensitivity analysis for itemgn objects
+#' Prediction method for itemgn objects
+#'
+#' Obtains gamma-values on a test dataset based on 
+#' an \code{itemgn} object from \code{link{cfsens_mgn}}.
+#'
+#' @details When \code{type = "ate"}, the inference is valid unconditionally;
+#' when \code{type = "att"}, the inference is valid conditional on T=1, and 
+#' \code{Y1_test} should be provided;
+#' when \code{type = "atc"}, the inference is valid conditional on T=0, and
+#' \code{Y0_test} should be provided.
+#'
+#' 
+#' @param obj an object of class \code{itemgn}.
+#' @param X_test testing covariates.
+#' @param Y1_test the potential outcome when treated. 
+#'                The default is \code{NULL}. See details.
+#' @param Y0_test the potential outcome when not treated. 
+#'                The default is \code{NULL}. See details.
+#' @param type the type of inference target. Takes value in \{"ate", "att", "atc"\}. See details.
+#' @param Gamma_max the maximum value of Gamma to be considered for sensitivity analysis. The default is 5.
+#' @param gamma_length the number of Gamma to be considered for sensitivity analysis. The default is 51.
+#'
+#' @return a vector of gamma-values.
 #'
 #' @export
 

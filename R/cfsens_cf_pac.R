@@ -1,5 +1,41 @@
 #' Robust conformal counterfactual inference with PAC-type guarantee
 #'
+#' \code{cfsens_cf_pac} constructs robust predictive intervals for 
+#' counterfactuals with the PAC guarantee.
+#'
+#'
+#' @details When \code{side = "two"}, the predictive interval takes the form [a,b];
+#' when \code{side = "above"}, the predictive interval takes the form [a,Inf);
+#' when \code{side = "below"}, the predictive interval takes the form (-Inf,a].
+#'
+#' When \code{null_type = "sharp"}, the null hypothesis is H_0: Y(1) - Y(0) = 0.
+#' When \code{null_type = "negative"}, the null hypothesis is H_0: Y(1) - Y(0) <= 0.
+#' When \code{null_type = "positive"}, the null hypothesis is H_0: Y(1) - Y(0) >= 0.
+#'
+#'
+#' @param X covariates.
+#' @param Y the observed outcome vector.
+#' @param T the vector of treatment assignments.
+#' @param Gamma The confounding level.
+#' @param alpha the target confidence level.
+#' @param delta the target confidence level over the randomness of calibration set.
+#' @param side the type of predictive intervals that takes value in \{"two", "above", "below"\}. See details.
+#' @param score_type the type of nonconformity scores. The default is "cqr".
+#' @param ps_fun a function that models the treatment assignment mechanism. The default is "regression_forest".
+#' @param ps a vector of propensity score. The default is \code{NULL}. 
+#' @param pred_fun a function that models the potential outcome conditional on the covariates. The default is "quantile_forest".
+#' @param train_prop proportion of units used for training. The default is 75\%. 
+#' @param train_id The index of the units used for training. The default is \code{NULL}.
+#'
+#' @return an \code{cfpac} object.
+#'
+#' @seealso 
+#' \code{\link{cfsens_cf_mgn}}
+#'
+#' @examples
+#'
+#'
+#'
 #'
 #' @export
 
@@ -99,6 +135,31 @@ cfsens_cf_pac <- function(X, Y, T,
 }
 
 #' Predictive interval for cfpac objects
+#'
+#' Obtains predictive intervals on a test dataset based on 
+#' an \code{cfpac} object from \code{link{cfsens_cf_pac}}.
+#'
+#' @details When \code{type = "treated"}, predictive intervals for Y(1)
+#' are constructed; when \code{type = "control"}, predictive intervals
+#' for Y(0) are constructed. 
+#'
+#' When \code{type = "ate"}, the inference is valid unconditionally;
+#' when \code{type = "att"}, the inference is valid conditional on T=1, and 
+#' \code{Y1_test} should be provided;
+#' when \code{type = "atc"}, the inference is valid conditional on T=0, and
+#' \code{Y0_test} should be provided.
+#'
+#' 
+#' @param obj an object of class \code{cfpac}.
+#' @param X_test testing covariates.
+#' @param estimand the inferential target that 
+#'                 takes value in \{"treated", "control"\}. See details.
+#' @param type the type of inference target. 
+#'             Takes value in \{"ate", "att", "atc"\}. See details.
+#'
+#' @return predictive intervals. A data.frame that contains \code{nrow(X_test)} rows and 
+#'                               two columns: "Y_hi" refers the upper bound and "Y_lo" 
+#'                               the lower bound.
 #'
 #' @export
 predict.cfpac <- function(obj, X_test, 

@@ -1,5 +1,34 @@
 #' Sensitivity analysis of individual treatment effects with PAC-type guarantees
 #'
+#' \code{cfsens_pac} conducts sensitivity analysis of individual treatment effects
+#'  with PAC-type guarantee.
+#' It currently supports testing the sharp null and the directional nulls.
+#'
+#' @details When \code{null_type = "sharp"}, the null hypothesis is H_0: Y(1) - Y(0) = 0.
+#' When \code{null_type = "negative"}, the null hypothesis is H_0: Y(1) - Y(0) <= 0.
+#' When \code{null_type = "positive"}, the null hypothesis is H_0: Y(1) - Y(0) >= 0.
+#'
+#'
+#' @param X covariates.
+#' @param Y the observed outcome vector.
+#' @param T the vector of treatment assignments.
+#' @param alpha the target confidence level.
+#' @param delta the confidence level over the randomness over the calibration set.
+#' @param null_type the null to be tested that takes value in \{"sharp", "negative", "positive"\}. See Details. 
+#' @param score_type the type of nonconformity scores. The default is "cqr".
+#' @param ps_fun a function that models the treatment assignment mechanism. The default is "regression_forest".
+#' @param ps a vector of propensity score. The default is \code{NULL}. 
+#' @param pred_fun a function that models the potential outcome conditional on the covariates. The default is "quantile_forest".
+#' @param train_prop proportion of units used for training. The default is 75\%. 
+#' @param train_id The index of the units used for training. The default is \code{NULL}.
+#'
+#' @return an \code{itepac} object.
+#'
+#' @seealso 
+#' \code{\link{cfsens_mgn}}
+#'
+#' @examples
+#'
 #'
 #' @export
 
@@ -10,7 +39,7 @@ cfsens_pac <- function(X, Y, T,
                        ps_fun = regression_forest, 
                        ps = NULL, 
                        pred_fun = quantile_forest, 
-                       train_pop = 0.75, train_id = NULL){
+                       train_prop = 0.75, train_id = NULL){
   
   ## Process the input
   score_type <- score_type[1]
@@ -21,7 +50,7 @@ cfsens_pac <- function(X, Y, T,
   ## Split the data into a training fold and a calibration fold
   n <- length(Y)
   if(is.null(train_id)){
-    ntrain <- floor(n * train_pop)
+    ntrain <- floor(n * train_prop)
     train_id <- sample(1:n, ntrain, replace = FALSE)
   }
   calib_id <- (1:n)[-train_id]
@@ -99,13 +128,37 @@ cfsens_pac <- function(X, Y, T,
 
 }
 
-#' Predictive interval for itepac objects
+#' Prediction method for itepac objects
+#'
+#' Obtains gamma-values on a test dataset based on 
+#' an \code{itepac} object from \code{link{cfsens_pac}}.
+#'
+#' @details When \code{type = "ate"}, the inference is valid unconditionally;
+#' when \code{type = "att"}, the inference is valid conditional on T=1, and 
+#' \code{Y1_test} should be provided;
+#' when \code{type = "atc"}, the inference is valid conditional on T=0, and
+#' \code{Y0_test} should be provided.
+#'
+#' 
+#' @param obj an object of class \code{itepac}.
+#' @param X_test testing covariates.
+#' @param Y1_test the potential outcome when treated. 
+#'                The default is \code{NULL}. See details.
+#' @param Y0_test the potential outcome when not treated. 
+#'                The default is \code{NULL}. See details.
+#' @param type the type of inference target. Takes value in \{"ate", "att", "atc"\}. See details.
+#' @param bnd_type the method for constructing lower bound for the CDFs. 
+#'                 The default is "wsr".
+#' @param Gamma_max the maximum value of Gamma to be considered for sensitivity analysis. The default is 5.
+#' @param gamma_length the number of Gamma to be considered for sensitivity analysis. The default is 51.
+#'
+#' @return a vector of gamma-values.
 #'
 #' @export
 
 predict.itepac <- function(obj, X_test, Y1_test = NULL, Y0_test = NULL,
                            type = c("ate", "att", "atc"),
-                           bnd_type = c("wsr", "hoeffding"), 
+                           bnd_type = c("wsr"), 
                            num_grids = 1000, rand_ind = NULL,
                            wsr_seed = 24601, max_gamma = 5, 
                            gamma_length = 51){
@@ -113,7 +166,7 @@ predict.itepac <- function(obj, X_test, Y1_test = NULL, Y0_test = NULL,
   type <- type[1]
   stopifnot(type %in% c("ate", "att", "atc"))
   bnd_type <- bnd_type[1]
-  stopifnot(bnd_type %in% c("wsr", "hoeffding"))
+  stopifnot(bnd_type %in% c("wsr"))
 
   ps_mdl <- obj$ps_mdl
   pred_mdl0 <- obj$pred_mdl0

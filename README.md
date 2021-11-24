@@ -20,7 +20,7 @@ if (!require("devtools")){
 }
 devtools::install_github("zhimeir/cfsensitivity")
 ```
-The [grf](https://github.com/grf-labs/grf) is required.
+The [grf](https://github.com/grf-labs/grf) package is required.
 
 ## Usage examples
 We illustrate the usage of the package with synthetic dataset.

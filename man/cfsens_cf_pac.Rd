@@ -64,7 +64,7 @@ When \code{null_type = "negative"}, the null hypothesis is H_0: Y(1) - Y(0) <= 0
 When \code{null_type = "positive"}, the null hypothesis is H_0: Y(1) - Y(0) >= 0.
 
 [a,Inf);
-when 1OqDhNflve9OVOZVWw2cPqMqWaFAnhZX-3-, the predictive interval takes the form (-Inf,a]: R:a,Inf);\%0Awhen\%201OqDhNflve9OVOZVWw2cPqMqWaFAnhZX-3-,\%20the\%20predictive\%20interval\%20takes\%20the\%20form\%20(-Inf,a
+when Jt6e7UGhfvsanlpARvc2kbuyhGNqHHde-3-, the predictive interval takes the form (-Inf,a]: R:a,Inf);\%0Awhen\%20Jt6e7UGhfvsanlpARvc2kbuyhGNqHHde-3-,\%20the\%20predictive\%20interval\%20takes\%20the\%20form\%20(-Inf,a
 }
 \examples{
 \donttest{

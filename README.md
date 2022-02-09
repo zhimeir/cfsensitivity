@@ -1,5 +1,6 @@
 # cfsensitivity
 An R package for the conformalized counterfactual estimation with the presence of unobserved confounders.
+The methodology is based on the paper: [Sensitivity Analysis of Individual Treatment Effects: A Robust Conformal Inference Approach](https://arxiv.org/abs/2111.12161).
 
 ## Overview
 This R package implements the method for sensitivity analysis of individual treatment effects 

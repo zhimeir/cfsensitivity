@@ -20,6 +20,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-home">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -32,18 +34,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">cfsensitivity</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="reference/index.html">Reference</a>
 </li>
@@ -60,13 +56,13 @@
 
       </header><div class="row">
   <div class="contents col-md-9">
-<div id="cfsensitivity" class="section level1">
-<div class="page-header"><h1 class="hasAnchor">
-<a href="#cfsensitivity" class="anchor"></a>cfsensitivity</h1></div>
-<p>An R package for the conformalized counterfactual estimation with the presence of unobserved confounders.</p>
-<div id="overview" class="section level2">
-<h2 class="hasAnchor">
-<a href="#overview" class="anchor"></a>Overview</h2>
+<div class="section level1">
+<div class="page-header"><h1 id="cfsensitivity">cfsensitivity<a class="anchor" aria-label="anchor" href="#cfsensitivity"></a>
+</h1></div>
+<p>An R package for the conformalized counterfactual estimation with the presence of unobserved confounders. The methodology is based on the paper: <a href="https://arxiv.org/abs/2111.12161" class="external-link">Sensitivity Analysis of Individual Treatment Effects: A Robust Conformal Inference Approach</a>.</p>
+<div class="section level2">
+<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+</h2>
 <p>This R package implements the method for sensitivity analysis of individual treatment effects proposed in our paper: Sensitivity Analysis of Individual Treatment Effects: A Robust Conformal Inference Approach.</p>
 <ul>
 <li>
@@ -79,128 +75,141 @@
 <code><a href="reference/cfsens_cf_pac.html">cfsens_cf_pac()</a></code> produces robust predictice intervals for the counterfactuals with the PAC-type guarantee.</li>
 </ul>
 </div>
-<div id="installation" class="section level2">
-<h2 class="hasAnchor">
-<a href="#installation" class="anchor"></a>Installation</h2>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
 <p>To install the package, run the following commands in R:</p>
-<pre class="{r}"><code>if (!require("devtools")){
-    install.packages("devtools")
-}
-devtools::install_github("zhimeir/cfsensitivity")</code></pre>
-<p>The <a href="https://github.com/grf-labs/grf">grf</a> package is required.</p>
+<pre class="{r}"><code><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st"><a href="https://devtools.r-lib.org/" class="external-link">"devtools"</a></span><span class="op">)</span><span class="op">)</span><span class="op">{</span>
+    <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span>
+<span class="op">}</span>
+<span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"zhimeir/cfsensitivity"</span><span class="op">)</span></code></pre>
+<p>The <a href="https://github.com/grf-labs/grf" class="external-link">grf</a> package is required.</p>
 </div>
-<div id="usage-examples" class="section level2">
-<h2 class="hasAnchor">
-<a href="#usage-examples" class="anchor"></a>Usage examples</h2>
+<div class="section level2">
+<h2 id="usage-examples">Usage examples<a class="anchor" aria-label="anchor" href="#usage-examples"></a>
+</h2>
 <p>We illustrate the usage of the package with synthetic dataset.</p>
-<pre class="{r}"><code>## Data generating model
-data_model &lt;- function(n, p, Gamma, seed){
-  set.seed(seed)
-  beta &lt;- matrix(c(-0.531,0.126,-0.312,0.018,rep(0,p-4)), nrow=p)
-  X &lt;- matrix(runif(n * p), n, p)
-  U &lt;- rnorm(n) * abs(1 + 0.5 * sin(2.5 * X[,1]))
-  Y1 &lt;-  X %*% beta + U
-  Y0 &lt;- X %*% beta - U
-  prop.x &lt;- exp(X %*% beta) / (1 + exp(X %*% beta))
-  p.x &lt;- 1-(1/(prop.x + (1-prop.x)/Gamma ) -1)/( 1/(prop.x + (1-prop.x)/Gamma) - 1/(prop.x + Gamma*(1-prop.x)))
-  t.x &lt;- qnorm(1-p.x/2) * abs(1+0.5*sin(2.5*X[,1]))
-  prop.xu &lt;- (prop.x/(prop.x+Gamma*(1-prop.x)))*(abs(U)&lt;=t.x) + (prop.x/(prop.x+ (1-prop.x)/Gamma))*(abs(U)&gt;t.x)
-  TT &lt;- rbinom(n, size=1, prob=prop.xu)
-  Y &lt;- TT * Y1 + (1 - TT) * Y0
+<pre class="{r}"><code><span class="co">## Data generating model</span>
+<span class="va">data_model</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span>, <span class="va">p</span>, <span class="va">Gamma</span>, <span class="va">seed</span><span class="op">)</span><span class="op">{</span>
+  <span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="va">seed</span><span class="op">)</span>
+  <span class="va">beta</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.531</span>,<span class="fl">0.126</span>,<span class="op">-</span><span class="fl">0.312</span>,<span class="fl">0.018</span>,<span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>,<span class="va">p</span><span class="op">-</span><span class="fl">4</span><span class="op">)</span><span class="op">)</span>, nrow<span class="op">=</span><span class="va">p</span><span class="op">)</span>
+  <span class="va">X</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="va">p</span><span class="op">)</span>, <span class="va">n</span>, <span class="va">p</span><span class="op">)</span>
+  <span class="va">U</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fl">2.5</span> <span class="op">*</span> <span class="va">X</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>
+  <span class="va">Y1</span> <span class="op">&lt;-</span>  <span class="va">X</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">beta</span> <span class="op">+</span> <span class="va">U</span>
+  <span class="va">Y0</span> <span class="op">&lt;-</span> <span class="va">X</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">beta</span> <span class="op">-</span> <span class="va">U</span>
+  <span class="va">prop.x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">X</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">beta</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">X</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">beta</span><span class="op">)</span><span class="op">)</span>
+  <span class="va">p.x</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">-</span><span class="op">(</span><span class="fl">1</span><span class="op">/</span><span class="op">(</span><span class="va">prop.x</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">-</span><span class="va">prop.x</span><span class="op">)</span><span class="op">/</span><span class="va">Gamma</span> <span class="op">)</span> <span class="op">-</span><span class="fl">1</span><span class="op">)</span><span class="op">/</span><span class="op">(</span> <span class="fl">1</span><span class="op">/</span><span class="op">(</span><span class="va">prop.x</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">-</span><span class="va">prop.x</span><span class="op">)</span><span class="op">/</span><span class="va">Gamma</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">/</span><span class="op">(</span><span class="va">prop.x</span> <span class="op">+</span> <span class="va">Gamma</span><span class="op">*</span><span class="op">(</span><span class="fl">1</span><span class="op">-</span><span class="va">prop.x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>
+  <span class="va">t.x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">qnorm</a></span><span class="op">(</span><span class="fl">1</span><span class="op">-</span><span class="va">p.x</span><span class="op">/</span><span class="fl">2</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fl">1</span><span class="op">+</span><span class="fl">0.5</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fl">2.5</span><span class="op">*</span><span class="va">X</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span>
+  <span class="va">prop.xu</span> <span class="op">&lt;-</span> <span class="op">(</span><span class="va">prop.x</span><span class="op">/</span><span class="op">(</span><span class="va">prop.x</span><span class="op">+</span><span class="va">Gamma</span><span class="op">*</span><span class="op">(</span><span class="fl">1</span><span class="op">-</span><span class="va">prop.x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">*</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">U</span><span class="op">)</span><span class="op">&lt;=</span><span class="va">t.x</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="va">prop.x</span><span class="op">/</span><span class="op">(</span><span class="va">prop.x</span><span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">-</span><span class="va">prop.x</span><span class="op">)</span><span class="op">/</span><span class="va">Gamma</span><span class="op">)</span><span class="op">)</span><span class="op">*</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">U</span><span class="op">)</span><span class="op">&gt;</span><span class="va">t.x</span><span class="op">)</span>
+  <span class="va">TT</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="va">n</span>, size<span class="op">=</span><span class="fl">1</span>, prob<span class="op">=</span><span class="va">prop.xu</span><span class="op">)</span>
+  <span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">TT</span> <span class="op">*</span> <span class="va">Y1</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">TT</span><span class="op">)</span> <span class="op">*</span> <span class="va">Y0</span>
   
-  return(list(Y1 = Y1, Y0 = Y0, Y = Y, X = X, T = TT))
-}
+  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Y1 <span class="op">=</span> <span class="va">Y1</span>, Y0 <span class="op">=</span> <span class="va">Y0</span>, Y <span class="op">=</span> <span class="va">Y</span>, X <span class="op">=</span> <span class="va">X</span>, T <span class="op">=</span> <span class="va">TT</span><span class="op">)</span><span class="op">)</span>
+<span class="op">}</span>
 
-## Generate confounded training data
-n &lt;- 5000
-n_test &lt;- 5000
-p &lt;- 10
-Gamma &lt;- 1.5
-data &lt;- data_model(n, p, Gamma, 2021)
+<span class="co">## Generate confounded training data</span>
+<span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
+<span class="va">n_test</span> <span class="op">&lt;-</span> <span class="fl">5000</span>
+<span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">10</span>
+<span class="va">Gamma</span> <span class="op">&lt;-</span> <span class="fl">1.5</span>
+<span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">data_model</span><span class="op">(</span><span class="va">n</span>, <span class="va">p</span>, <span class="va">Gamma</span>, <span class="fl">2021</span><span class="op">)</span>
 
-## Generate confounded test data
-test &lt;- data_model(n_test, p, Gamma, 2022)
+<span class="co">## Generate confounded test data</span>
+<span class="va">test</span> <span class="op">&lt;-</span> <span class="fu">data_model</span><span class="op">(</span><span class="va">n_test</span>, <span class="va">p</span>, <span class="va">Gamma</span>, <span class="fl">2022</span><span class="op">)</span>
 
-## Run sensitivity analysis with marginal guarantee
-## grf pacakge needs to be installed
-alpha &lt;- 0.2
-res &lt;- cfsens_mgn(data$X, data$Y, data$T, 
-                  alpha = alpha, null_type = "negative", 
-                  ps_fun = regression_forest, 
-                  pred_fun = quantile_forest)
+<span class="co">## Run sensitivity analysis with marginal guarantee</span>
+<span class="co">## grf pacakge needs to be installed</span>
+<span class="va">alpha</span> <span class="op">&lt;-</span> <span class="fl">0.2</span>
+<span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cfsens_mgn.html">cfsens_mgn</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">X</span>, <span class="va">data</span><span class="op">$</span><span class="va">Y</span>, <span class="va">data</span><span class="op">$</span><span class="cn">T</span>, 
+                  alpha <span class="op">=</span> <span class="va">alpha</span>, null_type <span class="op">=</span> <span class="st">"negative"</span>, 
+                  ps_fun <span class="op">=</span> <span class="va">regression_forest</span>, 
+                  pred_fun <span class="op">=</span> <span class="va">quantile_forest</span><span class="op">)</span>
 
-out_res &lt;- predict(res, test$X, Y1_test = test$Y1, type = "att")
-out_res
+<span class="va">out_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">res</span>, <span class="va">test</span><span class="op">$</span><span class="va">X</span>, Y1_test <span class="op">=</span> <span class="va">test</span><span class="op">$</span><span class="va">Y1</span>, type <span class="op">=</span> <span class="st">"att"</span><span class="op">)</span>
+<span class="va">out_res</span>
 
-## Run sensitivity analysis with PAC-type guarantee
-## grf package needs to be installed
-alpha &lt;- 0.2
-delta &lt;- 0.1
-res &lt;- cfsens_pac(data$X, data$Y, data$T, 
-                  alpha = alpha, delta = delta, null_type = "negative",
-                  ps_fun = regression_forest, 
-                  pred_fun = quantile_forest)
+<span class="co">## Run sensitivity analysis with PAC-type guarantee</span>
+<span class="co">## grf package needs to be installed</span>
+<span class="va">alpha</span> <span class="op">&lt;-</span> <span class="fl">0.2</span>
+<span class="va">delta</span> <span class="op">&lt;-</span> <span class="fl">0.1</span>
+<span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cfsens_pac.html">cfsens_pac</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">X</span>, <span class="va">data</span><span class="op">$</span><span class="va">Y</span>, <span class="va">data</span><span class="op">$</span><span class="cn">T</span>, 
+                  alpha <span class="op">=</span> <span class="va">alpha</span>, delta <span class="op">=</span> <span class="va">delta</span>, null_type <span class="op">=</span> <span class="st">"negative"</span>,
+                  ps_fun <span class="op">=</span> <span class="va">regression_forest</span>, 
+                  pred_fun <span class="op">=</span> <span class="va">quantile_forest</span><span class="op">)</span>
 
-out_res &lt;- predict(res, test$X, Y1_test = test$Y1, type = "att")
-out_res
-
-
+<span class="va">out_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">res</span>, <span class="va">test</span><span class="op">$</span><span class="va">X</span>, Y1_test <span class="op">=</span> <span class="va">test</span><span class="op">$</span><span class="va">Y1</span>, type <span class="op">=</span> <span class="st">"att"</span><span class="op">)</span>
+<span class="va">out_res</span>
 
 
-## Construct predictive intervals with marginal guarantees
-## grf package needs to be installed
-alpha &lt;- 0.2
-res &lt;- cfsens_cf_mgn(data$X, data$Y, data$T, 
-                     Gamma = Gamma, alpha = alpha,
-                     ps_fun = regression_forest, 
-                     pred_fun = quantile_forest)
 
-out_res &lt;- predict(res, test$X, estimand = "treated", type = "ate")
-cover &lt;- mean((test$Y1 &gt;= out_res$Y_lo) * (test$Y1 &lt;= out_res$Y_hi))
-cover
 
-## Construct predictive intervals with marginal guarantees
-## grf package needs to be installed
-alpha &lt;- 0.2
-delta &lt;- 0.1
-res &lt;- cfsens_cf_pac(data$X, data$Y, data$T, 
-                     Gamma = Gamma, alpha = alpha,
-                     delta = delta,  
-                     ps_fun = regression_forest, 
-                     pred_fun = quantile_forest)
+<span class="co">## Construct predictive intervals with marginal guarantees</span>
+<span class="co">## grf package needs to be installed</span>
+<span class="va">alpha</span> <span class="op">&lt;-</span> <span class="fl">0.2</span>
+<span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cfsens_cf_mgn.html">cfsens_cf_mgn</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">X</span>, <span class="va">data</span><span class="op">$</span><span class="va">Y</span>, <span class="va">data</span><span class="op">$</span><span class="cn">T</span>, 
+                     Gamma <span class="op">=</span> <span class="va">Gamma</span>, alpha <span class="op">=</span> <span class="va">alpha</span>,
+                     ps_fun <span class="op">=</span> <span class="va">regression_forest</span>, 
+                     pred_fun <span class="op">=</span> <span class="va">quantile_forest</span><span class="op">)</span>
 
-out_res &lt;- predict(res, test$X, estimand = "treated", type = "ate")
-cover &lt;- mean((test$Y1 &gt;= out_res$Y_lo) * (test$Y1 &lt;= out_res$Y_hi))
-cover</code></pre>
+<span class="va">out_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">res</span>, <span class="va">test</span><span class="op">$</span><span class="va">X</span>, estimand <span class="op">=</span> <span class="st">"treated"</span>, type <span class="op">=</span> <span class="st">"ate"</span><span class="op">)</span>
+<span class="va">cover</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">test</span><span class="op">$</span><span class="va">Y1</span> <span class="op">&gt;=</span> <span class="va">out_res</span><span class="op">$</span><span class="va">Y_lo</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="va">test</span><span class="op">$</span><span class="va">Y1</span> <span class="op">&lt;=</span> <span class="va">out_res</span><span class="op">$</span><span class="va">Y_hi</span><span class="op">)</span><span class="op">)</span>
+<span class="va">cover</span>
+
+<span class="co">## Construct predictive intervals with marginal guarantees</span>
+<span class="co">## grf package needs to be installed</span>
+<span class="va">alpha</span> <span class="op">&lt;-</span> <span class="fl">0.2</span>
+<span class="va">delta</span> <span class="op">&lt;-</span> <span class="fl">0.1</span>
+<span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cfsens_cf_pac.html">cfsens_cf_pac</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">X</span>, <span class="va">data</span><span class="op">$</span><span class="va">Y</span>, <span class="va">data</span><span class="op">$</span><span class="cn">T</span>, 
+                     Gamma <span class="op">=</span> <span class="va">Gamma</span>, alpha <span class="op">=</span> <span class="va">alpha</span>,
+                     delta <span class="op">=</span> <span class="va">delta</span>,  
+                     ps_fun <span class="op">=</span> <span class="va">regression_forest</span>, 
+                     pred_fun <span class="op">=</span> <span class="va">quantile_forest</span><span class="op">)</span>
+
+<span class="va">out_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">res</span>, <span class="va">test</span><span class="op">$</span><span class="va">X</span>, estimand <span class="op">=</span> <span class="st">"treated"</span>, type <span class="op">=</span> <span class="st">"ate"</span><span class="op">)</span>
+<span class="va">cover</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">test</span><span class="op">$</span><span class="va">Y1</span> <span class="op">&gt;=</span> <span class="va">out_res</span><span class="op">$</span><span class="va">Y_lo</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="va">test</span><span class="op">$</span><span class="va">Y1</span> <span class="op">&lt;=</span> <span class="va">out_res</span><span class="op">$</span><span class="va">Y_hi</span><span class="op">)</span><span class="op">)</span>
+<span class="va">cover</span></code></pre>
 </div>
 </div>
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <div class="license">
-<h2>License</h2>
+<h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
 <li><a href="LICENSE.html">Full license</a></li>
-<li><small><a href="https://opensource.org/licenses/mit-license.php">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a></small></li>
+<li><small><a href="https://opensource.org/licenses/mit-license.php" class="external-link">MIT</a> + file <a href="LICENSE-text.html">LICENSE</a></small></li>
 </ul>
 </div>
+
+
+<div class="citation">
+<h2 data-toc-skip>Citation</h2>
+<ul class="list-unstyled">
+<li><a href="authors.html#citation">Citing cfsensitivity</a></li>
+</ul>
+</div>
+
 <div class="developers">
-<h2>Developers</h2>
+<h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
 <li>Zhimei Ren <br><small class="roles"> Author, maintainer </small>  </li>
 </ul>
 </div>
+
+
 
   </div>
 </div>
 
 
       <footer><div class="copyright">
-  <p>Developed by Zhimei Ren.</p>
+  <p></p>
+<p>Developed by Zhimei Ren.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
 </div>
 
       </footer>
@@ -208,6 +217,8 @@ cover</code></pre>
 
   
 
+
+  
 
   </body>
 </html>
